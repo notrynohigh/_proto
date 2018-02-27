@@ -285,7 +285,7 @@ void protocol_initialize(pfunc timer_start, pfunc timer_stop);
 void protocol_send(uint8_t cmd, uint8_t *pbuf, uint32_t param_len);
 
 
-
+void protocol_handle_initialize(void);
 
 #endif
 
