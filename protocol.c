@@ -1,6 +1,6 @@
 #include "protocol.h"
 #include "b_tp.h"
-
+#include "string.h"
 #if 0
 #define WEAK_FUNC    __weak
 #else
@@ -21,7 +21,7 @@ static uint8_t sg_proto_buf[PROTO_STATIC_BUF_LEN];
 
 static void _protocol_tp_callback(uint8_t *pbuf, uint32_t len)
 {
-    if(pbuf == NULL || len > PROTOCOL_BUF_LEN)
+    if(pbuf == b_TP_NULL || len > PROTOCOL_BUF_LEN)
     {
         return;
     }
@@ -89,6 +89,7 @@ void protocol_initialize(pfunc timer_start, pfunc timer_stop)
     memset(&sg_protocol_control, 0, sizeof(protocol_control_t));
     sg_protocol_control.timer_start = timer_start;
     sg_protocol_control.timer_stop = timer_stop;
+    b_tp_reg_callback(_protocol_tp_callback);
 }
 
 

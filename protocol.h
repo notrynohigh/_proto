@@ -165,7 +165,7 @@ typedef struct
     uint8_t  day;
     uint8_t  complete_flag;
     pro_run_info_t run_info[1];
-}pro_syn_walk_response_t;
+}pro_syn_run_response_t;
 
 
 /** CMD_RT_RUN_START */
