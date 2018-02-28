@@ -101,7 +101,7 @@ typedef struct
 {
     uint8_t  month;
     uint8_t  day;
-    uint32_t total_setp;
+    uint32_t total_step;
 }pro_total_step_response_t;
 
 

@@ -1,6 +1,8 @@
 #include "protocol.h"
 #include "app_timer.h"
 
+#include "wholeconfig.h"
+
 APP_TIMER_DEF(proto_app_timer_id);
 #define PROTO_TIMER_TICK    APP_TIMER_TICKS(100)
 static uint8_t sg_timer_flag = 0;
@@ -38,29 +40,39 @@ static void _proto_timer_stop()
 
 
 /** ------------------------------------------------------------------------------------------no param------ */
-static void _proto_heart_handle()
-{
-    ;
-}
-
 static void _proto_version_handle()
 {
-    ;
+    pro_version_t pro_version;
+    pro_version.fw_main_version = REVISION_NUM;
+    pro_version.fw_build_version = REVISION_NUM_DEPUTY;
+    pro_version.hw_version = REVISION_BOARD;
+    pro_version.protocol_version = REVISION_PROTOCOL;
+    pro_version.algo_version = REVISION_ARITH;
+    pro_version.manufacturer_code = COMPANY_SHOES;
+    pro_version.platform_code = PLATFORM_DEVICE;
+    protocol_send(CMD_VERSION, (uint8_t *)(&pro_version), sizeof(pro_version_t));
 }
 
 static void _proto_battery_handle()
 {
-    ;
+    pro_battery_t pro_battery;
+    pro_battery.voltage_mv = battery_get_voltage();
+    protocol_send(CMD_BATTERY, (uint8_t *)(&pro_battery), sizeof(pro_battery_t));
 }
 
 static void _proto_get_time_handle()
 {
-    ;
-}
-
-static void _proto_get_total_step_handle()
-{
-    ;
+    pro_time_t pro_time;
+    UTCTimeStruct time;
+    UTCTime sec = Get_Clock();
+    ConvertUTCTime( &time, sec);
+    pro_time.year = time.year - 2000;
+    pro_time.month = time.month;
+    pro_time.day = time.day;
+    pro_time.hour = time.hour;
+    pro_time.minute = time.minutes;
+    pro_time.second = time.seconds;
+    protocol_send(CMD_GET_TIME, (uint8_t *)(&pro_time), sizeof(pro_time_t));
 }
 
 static void _proto_syn_xyz_handle()
@@ -97,7 +109,27 @@ static void _proto_led_show_handle()
 
 static void _proto_set_time_handle(pro_time_t *parg)
 {
-    ;
+    UTCTimeStruct time;
+    time.year = 2000 + parg->year;
+    time.month = parg->month;
+    time.day = parg->day;
+    time.hour = parg->hour;
+    time.minutes = parg->minute;
+    time.seconds = parg->second;
+    Set_Clock(ConvertUTCSecs(&time));
+    flash_update_time();
+    protocol_send(CMD_SET_TIME, b_TP_NULL, 0);
+}
+
+static void _proto_get_total_step_handle(pro_total_step_require_t *parg)
+{
+    pro_total_step_response_t pro_total_step_resp;
+    total_step_info_t total_step;
+    flash_get_total_step(parg->month, parg->day, &total_step);
+    pro_total_step_resp.month = parg->month;
+    pro_total_step_resp.day = parg->day;
+    pro_total_step_resp.total_step = total_step.total_step;
+    protocol_send(CMD_GET_TOTAL_STEP, (uint8_t *)(&pro_total_step_resp), sizeof(pro_total_step_response_t));
 }
 
 static void _proto_syn_walk_handle(pro_syn_require_t *parg)
@@ -152,11 +184,9 @@ void protocol_handle_initialize()
 
 void protocol_handle(protocol_info_t protocol_info)
 {
+    heart_beat_clear();
     switch(protocol_info.cmd)
     {
-        case CMD_HEART:
-            _proto_heart_handle();
-            break;
         case CMD_VERSION:
             _proto_version_handle();
             break;
@@ -170,7 +200,7 @@ void protocol_handle(protocol_info_t protocol_info)
             _proto_get_time_handle();
             break;
         case CMD_GET_TOTAL_STEP:
-            _proto_get_total_step_handle();
+            _proto_get_total_step_handle((pro_total_step_require_t *)protocol_info.param_buf);
             break;
         case CMD_SYN_WALK_DATA:
             _proto_syn_walk_handle((pro_syn_require_t *)protocol_info.param_buf);
